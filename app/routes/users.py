@@ -83,13 +83,25 @@ def verificar_db(db: Session = Depends(get_db)):
         }
 
 @router.get("/debug")
-async def debug_telegram(request: Request):
+async def debug_telegram(request: Request, db: Session = Depends(get_db)):
     """Endpoint para depurar los datos de Telegram"""
     headers = dict(request.headers)
+    
+    # Verificar si hay usuarios en la base de datos
+    total_usuarios = db.query(models.Usuario).count()
+    
     return {
         "headers": headers,
         "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
         "init_data": headers.get("x-telegram-init-data"),
+        "total_usuarios": total_usuarios,
+        "usuarios": [
+            {
+                "telegram_id": u.telegram_id,
+                "username": u.username,
+                "wallet": u.wallet
+            } for u in db.query(models.Usuario).all()
+        ]
     }
 
 @router.get("/all")
