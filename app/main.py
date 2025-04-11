@@ -12,7 +12,9 @@ app = FastAPI()
 allowed_origins = [
     "https://ceibopay.netlify.app",  # Frontend en producción
     "http://localhost:5173",         # Frontend en desarrollo
-    "https://ceibopay-miniapp.netlify.app"  # MiniApp en producción
+    "https://ceibopay-miniapp.netlify.app",  # MiniApp en producción
+    "https://web.telegram.org",      # Telegram Web
+    "https://t.me"                   # Telegram
 ]
 
 app.add_middleware(
@@ -21,6 +23,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 app.include_router(users.router)
