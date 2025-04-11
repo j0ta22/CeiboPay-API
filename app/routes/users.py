@@ -136,6 +136,10 @@ def obtener_usuario_telegram(
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
+    # Asegurarse de que los productos estén inicializados
+    if not hasattr(user, 'productos'):
+        user.productos = []
+    
     return user
 
 @router.put("/{telegram_id}/wallet", response_model=schemas.UsuarioOut)
