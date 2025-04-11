@@ -226,9 +226,11 @@ async def actualizar_wallet_bot(
 
 @router.get("/health")
 async def health_check():
-    """Endpoint simple para verificar que el servidor está funcionando"""
+    """Endpoint para verificar el estado del servidor"""
     return {
         "status": "ok",
         "message": "Servidor funcionando correctamente",
-        "timestamp": datetime.datetime.now().isoformat()
+        "timestamp": datetime.datetime.now().isoformat(),
+        "database_configured": bool(os.getenv("DATABASE_URL")),
+        "bot_token_configured": bool(os.getenv("BOT_TOKEN"))
     }
