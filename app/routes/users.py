@@ -74,12 +74,18 @@ def verificar_db(db: Session = Depends(get_db)):
         return {
             "status": "success",
             "total_usuarios": len(usuarios),
-            "usuarios": usuarios
+            "usuarios": usuarios,
+            "database_url": os.getenv("DATABASE_URL", ""),
+            "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
+            "environment": os.getenv("ENVIRONMENT", "development")
         }
     except Exception as e:
         return {
             "status": "error",
-            "error": str(e)
+            "error": str(e),
+            "database_url": os.getenv("DATABASE_URL", ""),
+            "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
+            "environment": os.getenv("ENVIRONMENT", "development")
         }
 
 @router.get("/debug")
@@ -125,22 +131,34 @@ def obtener_usuario_telegram(
     init_data: str = Header(None, alias="X-Telegram-Init-Data"),
     db: Session = Depends(get_db)
 ):
-    # Durante desarrollo, permitir acceso sin init_data
-    if os.getenv("ENVIRONMENT") != "production":
-        print(f"Acceso permitido en modo desarrollo para telegram_id: {telegram_id}")
-    else:
-        if not init_data or not verify_telegram_init_data(init_data):
-            raise HTTPException(status_code=403, detail="Init data inválido")
+    """Obtener usuario por ID de Telegram"""
+    try:
+        print(f"Intentando obtener usuario con telegram_id: {telegram_id}")
+        print(f"Init data recibido: {init_data}")
+        print(f"Bot token configurado: {bool(os.getenv('BOT_TOKEN'))}")
+        
+        # Durante desarrollo, permitir acceso sin init_data
+        if os.getenv("ENVIRONMENT") != "production":
+            print(f"Acceso permitido en modo desarrollo para telegram_id: {telegram_id}")
+        else:
+            if not init_data:
+                print("Error: No se recibió init_data")
+                raise HTTPException(status_code=403, detail="Se requiere init_data de Telegram")
+                
+            if not verify_telegram_init_data(init_data):
+                print("Error: Init_data inválido")
+                raise HTTPException(status_code=403, detail="Init data inválido")
 
-    user = db.query(models.Usuario).filter_by(telegram_id=telegram_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    # Asegurarse de que los productos estén inicializados
-    if not hasattr(user, 'productos'):
-        user.productos = []
-    
-    return user
+        user = db.query(models.Usuario).filter_by(telegram_id=telegram_id).first()
+        if not user:
+            print(f"Error: Usuario no encontrado para telegram_id: {telegram_id}")
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        print(f"Usuario encontrado: {user.telegram_id}")
+        return user
+    except Exception as e:
+        print(f"Error al obtener usuario: {str(e)}")
+        raise
 
 @router.put("/{telegram_id}/wallet", response_model=schemas.UsuarioOut)
 def actualizar_wallet(
