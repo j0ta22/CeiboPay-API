@@ -19,7 +19,7 @@ origins = [
     "https://web.telegram.org",
     "https://*.telegram.org",
     "https://*.t.me",
-    "https://ceibopay-miniapp.netlify.app",
+    "https://ceibopay.netlify.app/",
     "http://localhost:5173",  # Para desarrollo local
     "https://ceibopay-api.onrender.com",  # Para el propio servidor
     "*"  # Permitir todos los orígenes
@@ -31,7 +31,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
     max_age=3600  # Cache preflight requests for 1 hour
 )
 
