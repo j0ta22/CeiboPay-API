@@ -27,7 +27,7 @@ class ProductoOut(ProductoBase):
 # ----------- USUARIO -----------
 
 class UsuarioBase(BaseModel):
-    telegram_id: str
+    telegram_id: int
     username: Optional[str] = None
     location: Optional[str] = None
     wallet: Optional[str] = None
@@ -51,6 +51,7 @@ class UsuarioOut(UsuarioBase):
 
 class WalletUpdate(BaseModel):
     wallet: str
+    encrypted_private_key: Optional[str] = None
 
 # ----------- COMPRA -----------
 

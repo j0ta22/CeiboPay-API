@@ -137,6 +137,9 @@ def actualizar_wallet(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     user.wallet = wallet_data.wallet
+    if wallet_data.encrypted_private_key:
+        user.encrypted_private_key = wallet_data.encrypted_private_key
+        
     db.commit()
     db.refresh(user)
     
