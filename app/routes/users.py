@@ -60,8 +60,9 @@ def verificar_db(db: Session = Depends(get_db)):
         
         # Consulta SQL directa para usuarios
         result = db.execute(text("""
-            SELECT telegram_id, username, wallet 
+            SELECT telegram_id, username, wallet, created_at
             FROM usuarios
+            ORDER BY created_at DESC
         """))
         
         usuarios = []
@@ -69,16 +70,27 @@ def verificar_db(db: Session = Depends(get_db)):
             usuarios.append({
                 "telegram_id": row[0],
                 "username": row[1],
-                "wallet": row[2]
+                "wallet": row[2],
+                "created_at": row[3].isoformat() if row[3] else None
             })
+            
+        # Obtener información de la base de datos
+        db_info = db.execute(text("""
+            SELECT current_database(), current_user, version()
+        """)).first()
             
         return {
             "status": "success",
             "total_usuarios": len(usuarios),
             "usuarios": usuarios,
+            "database_info": {
+                "name": db_info[0],
+                "user": db_info[1],
+                "version": db_info[2]
+            },
             "database_url": os.getenv("DATABASE_URL", ""),
             "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
-            "environment": os.getenv("ENVIRONMENT", "development")
+            "environment": os.getenv("ENVIRONMENT", "production")
         }
     except Exception as e:
         return {
@@ -86,7 +98,7 @@ def verificar_db(db: Session = Depends(get_db)):
             "error": str(e),
             "database_url": os.getenv("DATABASE_URL", ""),
             "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
-            "environment": os.getenv("ENVIRONMENT", "development")
+            "environment": os.getenv("ENVIRONMENT", "production")
         }
 
 @router.get("/debug")
@@ -137,17 +149,16 @@ def obtener_usuario_telegram(
         print(f"Intentando obtener usuario con telegram_id: {telegram_id}")
         print(f"Init data recibido: {init_data}")
         print(f"Bot token configurado: {bool(os.getenv('BOT_TOKEN'))}")
+        print(f"Entorno: {os.getenv('ENVIRONMENT', 'production')}")
         
-        # Durante desarrollo, permitir acceso sin init_data
-        if os.getenv("ENVIRONMENT") != "production":
-            print(f"Acceso permitido en modo desarrollo para telegram_id: {telegram_id}")
-        else:
+        # Verificar init_data en producción
+        if os.getenv("ENVIRONMENT", "production") == "production":
             if not init_data:
-                print("Error: No se recibió init_data")
+                print("Error: No se recibió init_data en producción")
                 raise HTTPException(status_code=403, detail="Se requiere init_data de Telegram")
                 
             if not verify_telegram_init_data(init_data):
-                print("Error: Init_data inválido")
+                print("Error: Init_data inválido en producción")
                 raise HTTPException(status_code=403, detail="Init data inválido")
 
         user = db.query(models.Usuario).filter_by(telegram_id=telegram_id).first()
@@ -217,7 +228,7 @@ def health_check():
     return {
         "status": "healthy",
         "version": "1.0.0",
-        "environment": os.getenv("ENVIRONMENT", "development"),
+        "environment": os.getenv("ENVIRONMENT", "production"),
         "database_configured": bool(os.getenv("DATABASE_URL")),
         "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
         "timestamp": datetime.datetime.now().isoformat()
