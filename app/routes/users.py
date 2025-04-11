@@ -144,3 +144,30 @@ def actualizar_wallet(
     db.refresh(user)
     
     return user
+
+@router.put("/bot/{telegram_id}/wallet")
+async def actualizar_wallet_bot(
+    telegram_id: int,
+    wallet_data: schemas.WalletUpdate,
+    x_bot_token: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Actualizar la wallet desde el bot"""
+    # Verificar el token del bot
+    if not x_bot_token or x_bot_token != os.getenv("BOT_TOKEN"):
+        raise HTTPException(status_code=403, detail="Token de bot inválido")
+    
+    # Buscar el usuario
+    user = db.query(models.Usuario).filter(models.Usuario.telegram_id == telegram_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Actualizar la wallet
+    user.wallet = wallet_data.wallet
+    if wallet_data.encrypted_private_key:
+        user.encrypted_private_key = wallet_data.encrypted_private_key
+    
+    db.commit()
+    db.refresh(user)
+    
+    return user
