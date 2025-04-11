@@ -14,7 +14,7 @@ from ..auth import verify_telegram_data
 
 router = APIRouter(
     prefix="/users",
-    tags=["Usuarios"]
+    tags=["users"]
 )
 
 @router.post("/sync")
@@ -140,61 +140,50 @@ def listar_usuarios(db: Session = Depends(get_db)):
         ]
     }
 
-@router.get("/telegram/{telegram_id}", response_model=schemas.UsuarioOut)
-def obtener_usuario_telegram(
+@router.get("/telegram/{telegram_id}")
+async def get_user_by_telegram_id(
     telegram_id: int,
-    init_data: str = Header(None, alias="X-Telegram-Init-Data"),
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """Obtener usuario por ID de Telegram"""
-    try:
-        print(f"Intentando obtener usuario con telegram_id: {telegram_id}")
-        print(f"Init data recibido: {init_data}")
-        print(f"Bot token configurado: {bool(os.getenv('BOT_TOKEN'))}")
-        print(f"Entorno: {os.getenv('ENVIRONMENT', 'production')}")
-        
-        # Verificar init_data en producción
-        if os.getenv("ENVIRONMENT", "production") == "production":
-            if not init_data:
-                print("Error: No se recibió init_data en producción")
-                raise HTTPException(status_code=403, detail="Se requiere init_data de Telegram")
-                
-            if not verify_telegram_init_data(init_data):
-                print("Error: Init_data inválido en producción")
-                raise HTTPException(status_code=403, detail="Init data inválido")
+    # Verificar datos de Telegram
+    init_data = request.headers.get("X-Telegram-Init-Data")
+    if not init_data or not verify_telegram_data(init_data):
+        raise HTTPException(status_code=401, detail="No autorizado")
 
-        user = db.query(models.Usuario).filter_by(telegram_id=telegram_id).first()
-        if not user:
-            print(f"Error: Usuario no encontrado para telegram_id: {telegram_id}")
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
-        print(f"Usuario encontrado: {user.telegram_id}")
-        return user
-    except Exception as e:
-        print(f"Error al obtener usuario: {str(e)}")
-        raise
-
-@router.put("/{telegram_id}/wallet", response_model=schemas.UsuarioOut)
-def actualizar_wallet(
-    telegram_id: int,
-    wallet_data: schemas.WalletUpdate,
-    init_data: str = Header(..., alias="X-Telegram-Init-Data"),
-    db: Session = Depends(get_db)
-):
-    if not verify_telegram_init_data(init_data):
-        raise HTTPException(status_code=403, detail="Init data inválido")
-
-    user = db.query(models.Usuario).filter_by(telegram_id=telegram_id).first()
+    # Buscar usuario en la base de datos
+    user = db.query(models.Usuario).filter(models.Usuario.telegram_id == telegram_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+    return user
+
+@router.put("/{telegram_id}/wallet")
+async def update_wallet(
+    telegram_id: int,
+    wallet_data: schemas.WalletUpdate,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Actualizar wallet de usuario"""
+    # Verificar datos de Telegram
+    init_data = request.headers.get("X-Telegram-Init-Data")
+    if not init_data or not verify_telegram_data(init_data):
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    # Buscar usuario
+    user = db.query(models.Usuario).filter(models.Usuario.telegram_id == telegram_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # Actualizar wallet
     user.wallet = wallet_data.wallet
     if wallet_data.encrypted_private_key:
         user.encrypted_private_key = wallet_data.encrypted_private_key
-        
+
     db.commit()
     db.refresh(user)
-    
     return user
 
 @router.put("/bot/{telegram_id}/wallet")
