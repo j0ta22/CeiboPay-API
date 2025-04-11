@@ -8,6 +8,7 @@ from app.database import get_db
 from app.dependencies.telegram import verify_telegram_init_data
 import os
 from sqlalchemy import text
+import datetime
 
 router = APIRouter(
     prefix="/users",
@@ -209,3 +210,15 @@ async def actualizar_wallet_bot(
     db.refresh(user)
     
     return user
+
+@router.get("/health")
+def health_check():
+    """Endpoint para verificar el estado del servidor"""
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "database_configured": bool(os.getenv("DATABASE_URL")),
+        "bot_token_configured": bool(os.getenv("BOT_TOKEN")),
+        "timestamp": datetime.datetime.now().isoformat()
+    }
