@@ -1,16 +1,13 @@
 #!/bin/bash
 
-# Activar el entorno virtual si existe
-if [ -d "venv" ]; then
-    source venv/bin/activate
-fi
+# Activar el entorno virtual
+source venv/bin/activate
 
-# Instalar dependencias si no están instaladas
-if [ ! -d "venv" ]; then
-    python -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-fi
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Ejecutar migraciones de la base de datos
+alembic upgrade head
 
 # Iniciar el servidor
-uvicorn app.main:app --host 0.0.0.0 --port 10000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port $PORT --reload

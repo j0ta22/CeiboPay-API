@@ -8,27 +8,28 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Configurar CORS
-allowed_origins = [
-    "https://ceibopay.netlify.app",  # Frontend en producción
-    "http://localhost:5173",         # Frontend en desarrollo
-    "https://ceibopay-miniapp.netlify.app",  # MiniApp en producción
-    "https://web.telegram.org",      # Telegram Web
-    "https://t.me"                   # Telegram
+# Configuración CORS
+origins = [
+    "https://telegram.org",
+    "https://web.telegram.org",
+    "https://*.telegram.org",
+    "https://*.t.me",
+    "https://ceibopay-miniapp.netlify.app",
+    "http://localhost:5173",  # Para desarrollo local
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
 )
 
-app.include_router(users.router)
-app.include_router(products.router)
+app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(products.router, prefix="/products", tags=["products"])
 
 @app.get("/")
-def root():
-    return {"message": "CeiboPay API funcionando 👋"}
+async def root():
+    return {"message": "Bienvenido a CeiboPay API"}
