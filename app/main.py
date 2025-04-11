@@ -4,9 +4,14 @@ from app.database import Base, engine
 from app.routes import users, products
 import os
 
+# Crear tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    title="CeiboPay API",
+    description="API para la aplicación CeiboPay",
+    version="1.0.0"
+)
 
 # Configuración CORS
 origins = [
@@ -27,9 +32,24 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+# Incluir routers
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(products.router, prefix="/products", tags=["products"])
 
 @app.get("/")
 async def root():
-    return {"message": "Bienvenido a CeiboPay API"}
+    return {
+        "message": "Bienvenido a CeiboPay API",
+        "status": "ok",
+        "version": "1.0.0"
+    }
+
+@app.get("/health")
+async def health_check():
+    """Endpoint para verificar el estado del servidor"""
+    return {
+        "status": "ok",
+        "message": "Servidor funcionando correctamente",
+        "database_configured": bool(os.getenv("DATABASE_URL")),
+        "bot_token_configured": bool(os.getenv("BOT_TOKEN"))
+    }
