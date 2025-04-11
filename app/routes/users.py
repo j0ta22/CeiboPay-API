@@ -122,11 +122,15 @@ def listar_usuarios(db: Session = Depends(get_db)):
 @router.get("/telegram/{telegram_id}", response_model=schemas.UsuarioOut)
 def obtener_usuario_telegram(
     telegram_id: int,
-    init_data: str = Header(..., alias="X-Telegram-Init-Data"),
+    init_data: str = Header(None, alias="X-Telegram-Init-Data"),
     db: Session = Depends(get_db)
 ):
-    if not verify_telegram_init_data(init_data):
-        raise HTTPException(status_code=403, detail="Init data inválido")
+    # Durante desarrollo, permitir acceso sin init_data
+    if os.getenv("ENVIRONMENT") != "production":
+        print(f"Acceso permitido en modo desarrollo para telegram_id: {telegram_id}")
+    else:
+        if not init_data or not verify_telegram_init_data(init_data):
+            raise HTTPException(status_code=403, detail="Init data inválido")
 
     user = db.query(models.Usuario).filter_by(telegram_id=telegram_id).first()
     if not user:
