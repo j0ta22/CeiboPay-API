@@ -49,6 +49,9 @@ class UsuarioOut(UsuarioBase):
         from_attributes = True
 
 
+class WalletUpdate(BaseModel):
+    wallet: str
+
 # ----------- COMPRA -----------
 
 class CompraBase(BaseModel):
